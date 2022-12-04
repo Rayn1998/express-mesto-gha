@@ -1,46 +1,69 @@
-const User = require('../models/users')
+const User = require('../models/users');
 
 const getUsers = async (req, res) => {
   try {
-    const users = await User.find({})
-    return res.send(users)
-  } catch {
-    res.status(500)
+    const users = await User.find({});
+    return res.send(users);
+  } catch (err) {
+    res.status(500).json({ message: 'Произошла ошибка' });
   }
-}
+};
 
 const getUser = async (req, res) => {
-  const id = req.params.id
-  console.log(id.length > 10)
-  if (id.length > 10) {
-    const user = await User.findById(id)
-    if (!user) {
-      res.status(404).send("User hasn't found")
+  const { id } = req.params;
+  try {
+    const user = await User.findById(id);
+    return res.status(200).json(user);
+  } catch (err) {
+    if (err.name === 'CastError') {
+      res.status(400).json({ message: 'Пользователь не найден' });
     } else {
-      res.send({data: user})
+      res.status(500).json({ message: 'Произошла ошибка' });
     }
-  } else {
-    res.status(500).send("Enter correct values")
   }
-}
+};
 
 const createUser = async (req, res, next) => {
-  const {name, about, avatar} = req.body
-  if (!name || !about || !avatar) {
-    res.status(400).send(`Введены некорректные данные`)
-  } else {
-    const user = await User.create({name, about, avatar})
-    return res.send({data: user})
+  const { name, about, avatar } = req.body;
+  try {
+    const user = await User.create({ name, about, avatar });
+    return res.status(200).send({ data: user });
+  } catch (err) {
+    if (err.name === 'ValidationError') {
+      res.status(400).json({ message: 'Введены некорректные данные' });
+    } else {
+      res.status(500).json({ message: 'Произошла ошибка' });
+    }
   }
-}
+};
 
-const refreshProfile = (req, res) => {
-  res.status(200).send('Profile refreshed')
-}
+const refreshProfile = async (req, res) => {
+  const {name, about} = req.body
+  try {
+    const user = await User.updateMany({name, about})
+    res.status(200).json(user);
+  } catch (err) {
+    if (err.name === 'CastError') {
+      res.status(400).json({ message: 'Произошла ошибка обновления профиля' });
+    } else {
+      res.status(500).json({ message: 'Произошла ошибка' });
+    }
+  }
+};
 
-const refreshAvatar = (req, res) => {
-  res.status(200).send('Avatar refreshed')
-}
+const refreshAvatar = async (req, res) => {
+  const {avatar} = req.body
+  try {
+    const userAvatar = await User.updateOne({avatar})
+    res.status(200).json(userAvatar);
+  } catch (err) {
+    if (err.name === 'CastError') {
+      res.status(400).json({ message: 'Произошла ошибка обновления профиля' });
+    } else {
+      res.status(500).json({ message: 'Произошла ошибка' });
+    }
+  }
+};
 
 module.exports = {
   getUsers,
@@ -48,4 +71,4 @@ module.exports = {
   createUser,
   refreshProfile,
   refreshAvatar,
-}
+};
