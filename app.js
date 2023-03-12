@@ -24,10 +24,14 @@ app.use('*', (req, res) => {
   res.status(404).json({ message: 'Страница не найдена' });
 });
 
-mongoose.connect('mongodb://127.0.0.1:27017/mestodb', {
-  useNewUrlParser: true,
-}, () => {
-  app.listen(PORT, () => {
-    console.log(`App works!, port ${PORT}`);
-  });
-});
+mongoose.connect(
+  'mongodb://127.0.0.1:27017/mestodb',
+  {
+    useNewUrlParser: true,
+  },
+  () => {
+    app.listen(PORT, () => {
+      console.log(`App works!, port ${PORT}`);
+    });
+  },
+);

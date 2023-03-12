@@ -16,18 +16,18 @@ const getUser = async (req, res) => {
     return res.status(200).json(user);
   } catch (err) {
     if (err.name === 'CastError') {
-      res.status(400).json({ message: 'Пользователь не найден' });
+      res.status(404).json({ message: 'Пользователь не найден' });
     } else {
       res.status(500).json({ message: 'Произошла ошибка' });
     }
   }
 };
 
-const createUser = async (req, res, next) => {
+const createUser = async (req, res) => {
   const { name, about, avatar } = req.body;
   try {
     const user = await User.create({ name, about, avatar });
-    return res.status(200).send({ data: user });
+    return res.status(201).send({ data: user });
   } catch (err) {
     if (err.name === 'ValidationError') {
       res.status(400).json({ message: 'Введены некорректные данные' });
@@ -38,9 +38,9 @@ const createUser = async (req, res, next) => {
 };
 
 const refreshProfile = async (req, res) => {
-  const {name, about} = req.body
+  const { name, about } = req.body;
   try {
-    const user = await User.updateMany({name, about})
+    const user = await User.updateOne({ name, about }, { new: true });
     res.status(200).json(user);
   } catch (err) {
     if (err.name === 'CastError') {
@@ -52,9 +52,9 @@ const refreshProfile = async (req, res) => {
 };
 
 const refreshAvatar = async (req, res) => {
-  const {avatar} = req.body
+  const { avatar } = req.body;
   try {
-    const userAvatar = await User.updateOne({avatar})
+    const userAvatar = await User.updateOne({ avatar }, { new: true });
     res.status(200).json(userAvatar);
   } catch (err) {
     if (err.name === 'CastError') {
