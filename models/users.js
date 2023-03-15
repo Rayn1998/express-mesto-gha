@@ -16,6 +16,10 @@ const userSchema = new mongoose.Schema({
   avatar: {
     type: String,
     required: true,
+    validate: {
+      validator: (url) => /^(ftp|http|https):\/\/[^ "]+$/.test(url),
+      message: 'link is incorrect',
+    },
   },
 });
 
