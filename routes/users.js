@@ -8,7 +8,9 @@ const {
 } = require('../controllers/users');
 
 users.get('/', getUsers);
-users.post('/', createUser);
+users.get('/me', getUser);
+// users.get('/me', getUser);
+// users.post('/', createUser);
 users.patch('/me', refreshProfile);
 users.patch('/me/avatar', refreshAvatar);
 users.get('/:id', getUser);

@@ -1,8 +1,6 @@
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const User = require('../models/users');
-
-// function userUpdate(args) {
-//   User.updateOne({ ...args }, { new: true });
-// }
 
 const getUsers = async (req, res) => {
   try {
@@ -15,7 +13,7 @@ const getUsers = async (req, res) => {
 };
 
 const getUser = async (req, res) => {
-  const { id } = req.params;
+  const id = req.user._id;
   try {
     const user = await User.findById(id);
     return res.status(200).json(user);
@@ -30,10 +28,20 @@ const getUser = async (req, res) => {
 };
 
 const createUser = async (req, res) => {
-  const { name, about, avatar } = req.body;
+  const { name, about, avatar, email, password } = req.body;
+  console.log(req);
   try {
-    const user = User.updateOne({ name, about, avatar }, { new: true });
-    return res.status(201).send({ data: user });
+    bcrypt.hash(password, 10).then((hash) =>
+      User.create({
+        name,
+        about,
+        avatar,
+        email,
+        password: hash,
+      })
+        .then((user) => res.status(201).send({ data: user }))
+        .catch((err) => res.status(400).send(err)),
+    );
   } catch (err) {
     if (err.name === 'ValidationError') {
       res.status(400).json({ message: 'Введены некорректные данные' });
@@ -72,10 +80,32 @@ const refreshAvatar = async (req, res) => {
   }
 };
 
+const login = async (req, res) => {
+  const { email, password } = req.body;
+  User.findOne({email}).select('+password')
+    .then((user) => {
+      if (!user) {
+        return Promise.reject(new Error('Неправильные почта или пароль'));
+      }
+      if (bcrypt.compare(password, user.password, (err, result) => {
+        if (result) {
+          const token = jwt.sign({ _id: user._id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' });
+          res.json({ _id: user._id, jwt: token });
+        } else {
+          res.status(401).send({ message: 'Неправильные почта или пароль' });
+        }
+      }));
+    })
+    .catch((err) => {
+      res.status(401).send({ message: err.message });
+    });
+};
+
 module.exports = {
   getUsers,
   getUser,
   createUser,
   refreshProfile,
   refreshAvatar,
+  login,
 };

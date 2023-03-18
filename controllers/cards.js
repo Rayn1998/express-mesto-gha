@@ -25,15 +25,20 @@ const createCard = (req, res) => {
 };
 
 const deleteCard = (req, res) => {
-  Card.findByIdAndRemove(req.params.id)
-    .then((card) => res.send({ data: card }))
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        res.status(404).json({ message: 'Неверный id карточки' });
-      } else {
-        res.status(500).send({ message: 'На сервере произошла ошибка' });
-      }
-    });
+  const id = req.params.id;
+  if (id === req.user._id) {
+    Card.findByIdAndRemove(id)
+      .then((card) => res.send({ data: card }))
+      .catch((err) => {
+        if (err.name === 'CastError') {
+          res.status(404).json({ message: 'Неверный id карточки' });
+        } else {
+          res.status(500).send({ message: 'На сервере произошла ошибка' });
+        }
+      });
+  } else {
+    res.send({ message: 'Можно удалять только собственные карточки' });
+  }
 };
 
 const addLike = async (req, res) => {
