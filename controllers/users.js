@@ -28,8 +28,10 @@ const getUser = async (req, res) => {
   return null;
 };
 
-const createUser = async (req, res, next) => {
-  const { name, about, avatar, email, password } = req.body;
+const createUser = async (req, res) => {
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
   User.findOne({ email }).exec()
     .then((result) => {
       if (result) {

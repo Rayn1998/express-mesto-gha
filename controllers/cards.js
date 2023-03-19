@@ -8,6 +8,7 @@ const getCards = async (req, res) => {
   } catch (e) {
     handleError(res, 500, { message: 'На сервере произошла ошибка' });
   }
+  return null;
 };
 
 const createCard = (req, res) => {
