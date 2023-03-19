@@ -1,11 +1,12 @@
 const Card = require('../models/cards');
+const { handleError } = require('../middlewares/error');
 
 const getCards = async (req, res) => {
   try {
     const cards = await Card.find({}).populate(['owner', 'likes']);
     return res.status(200).json(cards);
   } catch (e) {
-    return res.status(500).json({ message: 'На сервере произошла ошибка' });
+    handleError(res, 500, { message: 'На сервере произошла ошибка' });
   }
 };
 
@@ -17,27 +18,27 @@ const createCard = (req, res) => {
     .then((card) => res.status(201).send({ data: card }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).json({ message: 'Введите корректные данные' });
+        handleError(res, 400, { message: 'Введите корректные данные' });
       } else {
-        res.status(500).json({ message: 'На сервере произошла ошибка' });
+        handleError(res, 500, { message: 'На сервере произошла ошибка' });
       }
     });
 };
 
 const deleteCard = (req, res) => {
-  const id = req.params.id;
+  const { id } = req.params;
   if (id === req.user._id) {
     Card.findByIdAndRemove(id)
       .then((card) => res.send({ data: card }))
       .catch((err) => {
         if (err.name === 'CastError') {
-          res.status(404).json({ message: 'Неверный id карточки' });
+          handleError(res, 404, { message: 'Неверный id карточки' });
         } else {
-          res.status(500).send({ message: 'На сервере произошла ошибка' });
+          handleError(res, 500, { message: 'На сервере произошла ошибка' });
         }
       });
   } else {
-    res.send({ message: 'Можно удалять только собственные карточки' });
+    handleError(res, 403, { message: 'Можно удалять только собственные карточки' });
   }
 };
 
@@ -52,15 +53,15 @@ const addLike = async (req, res) => {
       { new: true },
     );
     if (!handleLike) {
-      res.status(404).send('Карточка не найдена');
+      handleError(res, 404, { message: 'Карточка не найдена' });
     } else {
       res.send('Лайк поставлен');
     }
   } catch (e) {
     if (e.name === 'CastError') {
-      res.status(400).send('Произошла ошибка: неверная карточка');
+      handleError(res, 400, { message: 'Произошла ошибка: неверная карточка' });
     } else {
-      res.status(500).send('На сервере произошла ошибка');
+      handleError(res, 500, { message: 'На сервере произошла ошибка' });
     }
   }
 };
@@ -80,9 +81,9 @@ const removeLike = async (req, res) => {
     }
   } catch (e) {
     if (e.name === 'CastError') {
-      res.status(400).send('Произошла ошибка: неверная карточка');
+      handleError(res, 400, { message: 'Произошла ошибка: неверная карточка' });
     } else {
-      res.status(500).send('На сервере произошла ошибка');
+      handleError(res, 500, { message: 'На сервере произошла ошибка' });
     }
   }
 };
