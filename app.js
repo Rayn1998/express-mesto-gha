@@ -6,6 +6,7 @@ const users = require('./routes/users');
 const { login, createUser } = require('./controllers/users');
 const { auth } = require('./middlewares/auth');
 require('dotenv').config();
+const { Joi, celebrate } = require('celebrate');
 
 const app = express();
 
@@ -13,11 +14,9 @@ const { PORT = 3000 } = process.env;
 
 app.use(bodyParser.json());
 app.post('/signin', login);
-app.post('/signup', createUser);
+app.post('/signup', celebrate({}), createUser);
 app.use('/users', auth, users);
 app.use('/cards', auth, cards);
-// app.use(authorization);
-// app.post('/signin', authorization);
 
 app.use('*', (req, res) => {
   res.status(404).json({ message: 'Страница не найдена' });
