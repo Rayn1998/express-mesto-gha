@@ -8,6 +8,9 @@ const { login, createUser } = require('./controllers/users');
 const { auth } = require('./middlewares/auth');
 require('dotenv').config();
 const { handleError } = require('./middlewares/error');
+const BadRequestError = require('./middlewares/BadReqErr');
+const NotFoundError = require('./middlewares/NotFoundErr');
+const BadAuthError = require('./middlewares/BadAuthErr');
 
 const app = express();
 
@@ -24,8 +27,8 @@ app.post('/signup', celebrate({
   body: Joi.object().keys({
     name: Joi.string().min(2).max(30),
     about: Joi.string().min(2).max(30),
-    avatar: Joi.string().pattern(/^(ftp|http|https):\/\/[^ "]+$/),
-    email: Joi.string().required(),
+    avatar: Joi.string().pattern(/^(ftp|http|https):\/\/[^"]+\.\w{2,}/),
+    email: Joi.string().required().email(),
     password: Joi.string().required(),
   }),
 }), createUser);
@@ -37,10 +40,12 @@ app.use(errors());
 app.use('*', auth, (err, req, res, next) => {
   err.statusCode = 404;
   err.message = 'Страница не найдена';
-  handleError(err, req, res, next);
+  throw new Error(err.message);
 });
 
-app.use((err, req, res) => {
+app.use((err, req, res, next) => {
+  err.statusCode = err.statusCode || 500;
+  err.message = err.message || 'На сервере произошла ошибка';
   res.status(err.statusCode).send({ message: err.message });
 });
 

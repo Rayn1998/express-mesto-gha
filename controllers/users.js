@@ -10,23 +10,20 @@ const getUsers = async (req, res, next) => {
     return res.send(users);
   } catch (err) {
     handleError(err, req, res, next);
-    // { message: 'На сервере произошла ошибка' }
   }
   return null;
 };
 
 const getMe = async (req, res, next) => {
-  const id = req.user._id;
+  const id = req.user?._id;
   try {
     const user = await User.findById(id);
     return res.status(200).json(user);
   } catch (err) {
     if (err.name === 'CastError') {
-      handleError(err, req, res, next);
-      // handleError(res, 404, { message: 'Пользователь не найден' });
+      next(err);
     } else {
       handleError(err, req, res, next);
-      // handleError(res, 500, { message: 'На сервере произошла ошибка' });
     }
   }
   return null;
@@ -40,10 +37,8 @@ const getUser = async (req, res, next) => {
   } catch (err) {
     if (err.name === 'CastError') {
       handleError(err, req, res, next);
-      // handleError(res, 404, { message: 'Пользователь не найден' });
     } else {
       handleError(err, req, res, next);
-      // handleError(res, 500, { message: 'На сервере произошла ошибка' });
     }
   }
   return null;
@@ -53,16 +48,6 @@ const createUser = async (req, res, next) => {
   const {
     name, about, avatar, email, password,
   } = req.body;
-  // User.findOne({ email }).exec()
-  //   .then((result) => {
-  //     if (result) {
-  //       const err = Error;
-  //       err.statusCode = 409;
-  //       err.message = 'Пользователь с таким email уже зарегистрирован';
-  //       handleError(err, req, res, next);
-  //       // handleError(res, 409, { message: 'Пользователь с таким email уже зарегистрирован' });
-  //     } else {
-  //       try {
   bcrypt.hash(password, 10).then((hash) => {
     User.create({
       name,
@@ -85,19 +70,8 @@ const createUser = async (req, res, next) => {
         } else {
           next(err);
         }
-        // handleError(res, 500, { message: 'На сервере произошла ошибка' }
       });
   });
-  //     } catch (err) {
-
-  //         // handleError(res, 400, { message: 'Введены некорректные данные' });
-  //       } else {
-  //         handleError(err, req, res, next);
-  //         // handleError(res, 500, { message: 'На сервере произошла ошибк' });
-  //       }
-  //     }
-  //   }
-  // });
   return null;
 };
 
@@ -111,10 +85,8 @@ const refreshProfile = async (req, res, next) => {
       err.statusCode = 400;
       err.message = 'Произошла ошибка обновления профиля';
       handleError(err, req, res, next);
-      // handleError(res, 400, { message: 'Произошла ошибка обновления профиля' });
     } else {
       handleError(err, req, res, next);
-      // handleError(res, 500, { message: 'На сервере произошла ошибка' });
     }
   }
 };
@@ -129,10 +101,8 @@ const refreshAvatar = async (req, res, next) => {
       err.statusCode = 400;
       err.message = 'Произошла ошибка обновления профиля';
       handleError(err, req, res, next);
-      // handleError(res, 400, { message: 'Произошла ошибка обновления профиля' });
     } else {
       handleError(err, req, res, next);
-      // handleError(res, 500, { message: 'На сервере произошла ошибка' });
     }
   }
 };
@@ -144,7 +114,6 @@ const login = async (req, res, next) => {
     .then((user) => {
       if (!user) {
         next('Неправильные почта или пароль');
-        // { message: 'Неправильные почта или пароль' }
       }
       if (
         bcrypt.compare(password, user.password, (err, result) => {
@@ -157,9 +126,6 @@ const login = async (req, res, next) => {
             res.json({ _id: user._id, jwt: token });
           } else {
             next();
-            // handleError(401, 'Неправильные почта или пароль');
-            // throw new BadRequestError('Неправильные почта или пароль');
-            // handleError(res, 401, { message: 'Неправильные почта или пароль' });
           }
         })
       );
