@@ -13,7 +13,7 @@ const getUsers = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
-  res.send(users);
+  res.send({ message: users });
 };
 
 const getMe = async (req, res, next) => {
@@ -33,47 +33,55 @@ const getMe = async (req, res, next) => {
 
 const getUser = async (req, res, next) => {
   const { id } = req.params;
-  let user;
   try {
-    user = await User.findById(id);
+    await User.findById(id).then((data) => {
+      if (!data) {
+        next(new BadRequestError('Пользователь не найден'));
+      } else {
+        res.status(200).json(data);
+      }
+    });
   } catch (err) {
-    if (err.name === 'CastError') {
-      next(new BadRequestError('Пользователь не найден'));
-    } else {
-      next(err);
-    }
+    next(err);
   }
-  res.status(200).json(user);
 };
 
 const createUser = async (req, res, next) => {
   const {
     name, about, avatar, email, password,
   } = req.body;
-  bcrypt.hash(password, 10).then((hash) => {
-    User.create({
-      name,
-      about,
-      avatar,
-      email,
-      password: hash,
+  bcrypt
+    .hash(password, 10)
+    .then((hash) => {
+      User.create({
+        name,
+        about,
+        avatar,
+        email,
+        password: hash,
+      })
+        .then(() => res.status(201).send({
+          name,
+          about,
+          avatar,
+          email,
+        }))
+        .catch((e) => {
+          const err = Error;
+          if (e.name === 'ValidationError') {
+            next(new BadRequestError('Введены некорректные данные'));
+          } else if (e.code === 11000) {
+            next(
+              new SameUserError(
+                'Пользователь с таким email уже зарегистрирован',
+              ),
+            );
+          } else {
+            next(err);
+          }
+        });
     })
-      .then(() => res.status(201).send({
-        name, about, avatar, email,
-      }))
-      .catch((e) => {
-        const err = Error;
-        if (e.name === 'ValidationError') {
-          next(new BadRequestError('Введены некорректные данные'));
-        } else if (e.code === 11000) {
-          next(
-            new SameUserError('Пользователь с таким email уже зарегистрирован'),
-          );
-        } else {
-          next(err);
-        }
-      });
-  }).catch(next);
+    .catch(next);
 };
 
 const refreshProfile = async (req, res, next) => {

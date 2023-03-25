@@ -4,8 +4,7 @@ const bodyParser = require('body-parser');
 const { Joi, celebrate, errors } = require('celebrate');
 const cards = require('./routes/cards');
 const users = require('./routes/users');
-const { login, createUser, getUsers } = require('./controllers/users');
-const { getCards } = require('./controllers/cards');
+const { login, createUser } = require('./controllers/users');
 const { auth } = require('./middlewares/auth');
 // require('dotenv').config();
 const NotFoundError = require('./middlewares/NotFoundErr');
@@ -32,8 +31,6 @@ app.post('/signup', celebrate({
     password: Joi.string().required(),
   }),
 }), createUser);
-app.get('/cards', getCards);
-app.get('/users', getUsers);
 app.use('/users', auth, users);
 app.use('/cards', auth, cards);
 
