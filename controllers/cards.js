@@ -1,13 +1,15 @@
 const Card = require('../models/cards');
-const { handleError } = require('../middlewares/error');
+const BadRequestError = require('../middlewares/BadReqErr');
+const NotFoundError = require('../middlewares/NotFoundErr');
+const ForbiddenError = require('../middlewares/ForbiddenErr');
+const BadAuthError = require('../middlewares/BadAuthErr');
 
 const getCards = async (req, res, next) => {
   try {
     const cards = await Card.find({}).populate(['owner', 'likes']);
     return res.status(200).json(cards);
   } catch (err) {
-    handleError(err, req, res, next);
-    // handleError(res, 500, { message: 'На сервере произошла ошибка' });
+    next(err);
   }
   return null;
 };
@@ -20,47 +22,40 @@ const createCard = (req, res, next) => {
     .then((card) => res.status(201).send({ data: card }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        handleError(err, req, res, next);
-        // handleError(res, 400, { message: 'Введите корректные данные' });
+        const error = new BadRequestError('Введите корректные данные');
+        next(error);
       } else {
-        handleError(err, req, res, next);
-        // handleError(res, 500, { message: 'На сервере произошла ошибка' });
+        next(err);
       }
     });
 };
 
 const deleteCard = (req, res, next) => {
   const { id } = req.params;
-  Card.findById(id).then((result) => req.user._id === result.owner.valueOf())
-    .then((condition) => {
-      if (condition) {
-        Card.findByIdAndRemove(id)
-          .then((card) => {
-            res.send({ data: card });
-          })
-          .catch((err) => {
-            if (err.name === 'CastError') {
-              handleError(err, req, res, next);
-              // handleError(res, 404, { message: 'Неверный id карточки' });
-            } else {
-              handleError(err, req, res, next);
-              // handleError(res, 500, { message: 'На сервере произошла ошибка' });
-            }
-          });
-      } else return new Error();
-      // {
-      //   handleError(err, req, res, next);
-      // handleError(res, 403, { message: 'Можно удалять только собственные карточки' });
-      // }
-      return null;
-    }).catch((err) => {
-      err.statusCode = 403;
-      err.message = 'Можно удалять только собственные карточки';
-      handleError(err, req, res, next);
+  Card.findById(id)
+    .then((card) => {
+      if (!card) {
+        throw new NotFoundError('Карточка не найдена');
+      }
+      if (req.user._id !== card.owner.valueOf()) {
+        throw new ForbiddenError(
+          'Вы не можете удалить карточку другого пользователя',
+        );
+      }
+      card.deleteOne().then(() => {
+        res.status(200).send({ message: 'Карточка успешно удалена' });
+      });
+    })
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        next(new BadAuthError('Введён некорректный id карточки'));
+      } else {
+        next(err);
+      }
     });
 };
 
-const addLike = async (req, res) => {
+const addLike = async (req, res, next) => {
   const userId = req.user._id;
   const { cardId } = req.params;
 
@@ -71,23 +66,22 @@ const addLike = async (req, res) => {
       { new: true },
     );
     if (!handleLike) {
-      handleError(res, 404, { message: 'Карточка не найдена' });
+      next(new NotFoundError('Карточка не найдена'));
     } else {
       res.send('Лайк поставлен');
     }
   } catch (e) {
     if (e.name === 'CastError') {
-      handleError(res, 400, { message: 'Произошла ошибка: неверная карточка' });
+      next(new BadRequestError('Произошла ошибка: неверная карточка'));
     } else {
-      handleError(res, 500, { message: 'На сервере произошла ошибка' });
+      next(e);
     }
   }
 };
 
-const removeLike = async (req, res) => {
+const removeLike = async (req, res, next) => {
   const userId = req.user._id;
   const { cardId } = req.params;
-
   try {
     const disLike = await Card.findByIdAndUpdate(
       cardId,
@@ -99,9 +93,9 @@ const removeLike = async (req, res) => {
     }
   } catch (e) {
     if (e.name === 'CastError') {
-      handleError(res, 400, { message: 'Произошла ошибка: неверная карточка' });
+      next(new BadRequestError('Произошла ошибка: неверная карточка'));
     } else {
-      handleError(res, 500, { message: 'На сервере произошла ошибка' });
+      next(e);
     }
   }
 };

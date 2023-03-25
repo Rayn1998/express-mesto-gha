@@ -4,13 +4,13 @@ const bodyParser = require('body-parser');
 const { Joi, celebrate, errors } = require('celebrate');
 const cards = require('./routes/cards');
 const users = require('./routes/users');
-const { login, createUser } = require('./controllers/users');
+const { login, createUser, getUsers } = require('./controllers/users');
+const { getCards } = require('./controllers/cards');
 const { auth } = require('./middlewares/auth');
-require('dotenv').config();
-const { handleError } = require('./middlewares/error');
-const BadRequestError = require('./middlewares/BadReqErr');
+// require('dotenv').config();
 const NotFoundError = require('./middlewares/NotFoundErr');
-const BadAuthError = require('./middlewares/BadAuthErr');
+
+process.env.ACCESS_TOKEN_SECRET = 'default_key';
 
 const app = express();
 
@@ -32,15 +32,15 @@ app.post('/signup', celebrate({
     password: Joi.string().required(),
   }),
 }), createUser);
+app.get('/cards', getCards);
+app.get('/users', getUsers);
 app.use('/users', auth, users);
 app.use('/cards', auth, cards);
 
 app.use(errors());
 
-app.use('*', auth, (err, req, res, next) => {
-  err.statusCode = 404;
-  err.message = 'Страница не найдена';
-  throw new Error(err.message);
+app.use('*', auth, (req, res, next) => {
+  next(new NotFoundError('Страница не найдена'));
 });
 
 app.use((err, req, res, next) => {

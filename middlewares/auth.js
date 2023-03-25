@@ -1,22 +1,21 @@
 const jwt = require('jsonwebtoken');
+const BadAuthError = require('./BadAuthErr');
 
-const auth = async (err, req, res, next) => {
-  const token = req.headers.authorization.replace('Bearer ', '');
-  console.log(token);
-  try {
-    // process.env.ACCESS_TOKEN_SECRET
-    jwt.verify(token, 'default', (err, data) => {
-      if (data._id) {
-        req.user = data;
-        next();
-      }
-    });
-  } catch (e) {
-    const err = new Error('Пользователь не авторизован');
-    err.statusCode = 401;
-
-    next(err);
+const auth = async (req, res, next) => {
+  const token = await req.headers.authorization;
+  if (!token) {
+    next(new BadAuthError('Пользователь не авторизован'));
+  } else {
+    token.replace('Bearer ', '');
   }
+  let payload;
+  try {
+    payload = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+  } catch (e) {
+    next(new BadAuthError('Пользователь не авторизован'));
+  }
+  req.user = payload;
+  next();
 };
 
 module.exports = { auth };
