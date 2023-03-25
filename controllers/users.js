@@ -7,20 +7,20 @@ const SameUserError = require('../middlewares/SameUserErr');
 const BadAuthError = require('../middlewares/BadAuthErr');
 
 const getUsers = async (req, res, next) => {
+  let users;
   try {
-    const users = await User.find({});
-    return res.send(users);
+    users = await User.find({});
   } catch (err) {
     next(err);
   }
-  return null;
+  res.send(users);
 };
 
 const getMe = async (req, res, next) => {
   const id = req.user._id;
+  let user;
   try {
-    const user = await User.findById(id);
-    return res.status(200).json(user);
+    user = await User.findById(id);
   } catch (err) {
     if (err.name === 'CastError') {
       next(new BadRequestError('Пользователь не найден'));
@@ -28,14 +28,14 @@ const getMe = async (req, res, next) => {
       next(err);
     }
   }
-  return null;
+  res.status(200).json(user);
 };
 
 const getUser = async (req, res, next) => {
   const { id } = req.params;
+  let user;
   try {
-    const user = await User.findById(id);
-    return res.status(200).json(user);
+    user = await User.findById(id);
   } catch (err) {
     if (err.name === 'CastError') {
       next(new BadRequestError('Пользователь не найден'));
@@ -43,7 +43,7 @@ const getUser = async (req, res, next) => {
       next(err);
     }
   }
-  return null;
+  res.status(200).json(user);
 };
 
 const createUser = async (req, res, next) => {
@@ -58,7 +58,9 @@ const createUser = async (req, res, next) => {
       email,
       password: hash,
     })
-      .then((user) => res.status(201).send({ data: user }))
+      .then(() => res.status(201).send({
+        name, about, avatar, email,
+      }))
       .catch((e) => {
         const err = Error;
         if (e.name === 'ValidationError') {
@@ -71,8 +73,7 @@ const createUser = async (req, res, next) => {
           next(err);
         }
       });
-  });
-  return null;
+  }).catch(next);
 };
 
 const refreshProfile = async (req, res, next) => {
@@ -122,11 +123,9 @@ const login = async (req, res, next) => {
       if (
         bcrypt.compare(password, user.password, (err, result) => {
           if (result) {
-            const token = jwt.sign(
-              { _id: user._id },
-              process.env.ACCESS_TOKEN_SECRET,
-              { expiresIn: '7d' },
-            );
+            const token = jwt.sign({ _id: user._id }, 'secret', {
+              expiresIn: '7d',
+            });
             res.json({ _id: user._id, jwt: token });
           } else {
             next(new BadAuthError('Неправильные почта или пароль'));

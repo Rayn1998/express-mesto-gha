@@ -47,6 +47,7 @@ app.use((err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
   err.message = err.message || 'На сервере произошла ошибка';
   res.status(err.statusCode).send({ message: err.message });
+  next();
 });
 
 mongoose.connect(

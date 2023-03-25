@@ -2,16 +2,15 @@ const Card = require('../models/cards');
 const BadRequestError = require('../middlewares/BadReqErr');
 const NotFoundError = require('../middlewares/NotFoundErr');
 const ForbiddenError = require('../middlewares/ForbiddenErr');
-const BadAuthError = require('../middlewares/BadAuthErr');
 
 const getCards = async (req, res, next) => {
+  let cards;
   try {
-    const cards = await Card.find({}).populate(['owner', 'likes']);
-    return res.status(200).json(cards);
+    cards = await Card.find({}).populate(['owner', 'likes']);
   } catch (err) {
     next(err);
   }
-  return null;
+  res.status(200).json(cards);
 };
 
 const createCard = (req, res, next) => {
@@ -48,7 +47,7 @@ const deleteCard = (req, res, next) => {
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        next(new BadAuthError('Введён некорректный id карточки'));
+        next(new BadRequestError('Введён некорректный id карточки'));
       } else {
         next(err);
       }
@@ -68,7 +67,7 @@ const addLike = async (req, res, next) => {
     if (!handleLike) {
       next(new NotFoundError('Карточка не найдена'));
     } else {
-      res.send('Лайк поставлен');
+      res.send({ message: 'Лайк поставлен' });
     }
   } catch (e) {
     if (e.name === 'CastError') {
@@ -89,7 +88,7 @@ const removeLike = async (req, res, next) => {
       { new: true },
     );
     if (disLike) {
-      res.send('Лайк снят');
+      res.send({ message: 'Лайк снят' });
     }
   } catch (e) {
     if (e.name === 'CastError') {
