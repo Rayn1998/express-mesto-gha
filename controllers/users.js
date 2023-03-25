@@ -1,10 +1,10 @@
-const Error = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/users');
 const BadRequestError = require('../middlewares/BadReqErr');
 const SameUserError = require('../middlewares/SameUserErr');
 const BadAuthError = require('../middlewares/BadAuthErr');
+const NotFoundError = require('../middlewares/NotFoundErr');
 
 const getUsers = async (req, res, next) => {
   let users;
@@ -36,7 +36,7 @@ const getUser = async (req, res, next) => {
   try {
     await User.findById(id).then((data) => {
       if (!data) {
-        next(new BadRequestError('Пользователь не найден'));
+        next(new NotFoundError('Пользователь не найден'));
       } else {
         res.status(200).json(data);
       }
@@ -67,7 +67,6 @@ const createUser = async (req, res, next) => {
           email,
         }))
         .catch((e) => {
-          const err = Error;
           if (e.name === 'ValidationError') {
             next(new BadRequestError('Введены некорректные данные'));
           } else if (e.code === 11000) {
@@ -77,7 +76,7 @@ const createUser = async (req, res, next) => {
               ),
             );
           } else {
-            next(err);
+            next(e);
           }
         });
     })
@@ -128,18 +127,16 @@ const login = async (req, res, next) => {
       if (!user) {
         next(new BadAuthError('Неправильные почта или пароль'));
       }
-      if (
-        bcrypt.compare(password, user.password, (err, result) => {
-          if (result) {
-            const token = jwt.sign({ _id: user._id }, 'secret', {
-              expiresIn: '7d',
-            });
-            res.json({ _id: user._id, jwt: token });
-          } else {
-            next(new BadAuthError('Неправильные почта или пароль'));
-          }
-        })
-      );
+      bcrypt.compare(password, user.password, (err, result) => {
+        if (result) {
+          const token = jwt.sign({ _id: user._id }, 'secret', {
+            expiresIn: '7d',
+          });
+          res.json({ token });
+        } else {
+          next(new BadAuthError('Неправильные почта или пароль'));
+        }
+      });
     })
     .catch((err) => {
       next(err);

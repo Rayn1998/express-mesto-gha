@@ -89,6 +89,8 @@ const removeLike = async (req, res, next) => {
     );
     if (disLike) {
       res.send({ message: 'Лайк снят' });
+    } else {
+      next(new NotFoundError('Карточка не найдена'));
     }
   } catch (e) {
     if (e.name === 'CastError') {
